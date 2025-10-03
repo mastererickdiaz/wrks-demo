@@ -42,3 +42,4 @@ application-*.yml
 .env
 *.env
 *.log
+wrks-demo-config
