@@ -2,22 +2,29 @@
 
 echo "Construyendo todos los microservicios..."
 
-# Construir discovery-server
-echo "Construyendo discovery-server..."
-cd discovery-server
-mvn clean package -DskipTests
-cd ..
+# Función para construir un servicio
+build_service() {
+    local service_name=$1
+    echo "Construyendo ${service_name}..."
+    cd ${service_name}
+    mvn clean package -DskipTests
+    local result=$?
+    cd ..
+    if [ $result -ne 0 ]; then
+        echo "Error construyendo ${service_name}"
+        exit 1
+    fi
+    echo "${service_name} construido exitosamente"
+    echo "-------------------------"
+}
 
-# Construir user-service
-echo "Construyendo user-service..."
-cd user-service
-mvn clean package -DskipTests
-cd ..
+# Construir servicios de infraestructura primero
+build_service "config-server"
+build_service "discovery-server"
+build_service "api-gateway"
 
-# Construir order-service
-echo "Construyendo order-service..."
-cd order-service
-mvn clean package -DskipTests
-cd ..
+# Construir servicios de negocio
+build_service "user-service"
+build_service "order-service"
 
-echo "Construcción completada!"
+echo "¡Construcción completada exitosamente!"
