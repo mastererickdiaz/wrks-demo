@@ -1,0 +1,79 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: order-service
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-user:eureka-pass@localhost:8761/eureka/
+    healthcheck:
+      enabled: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.uuid}
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        loggerLevel: basic
+  circuitbreaker:
+    enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 50
+        event-consumer-buffer-size: 10
+      orderService:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        
+  retry:
+    instances:
+      userService:
+        max-attempts: 3
+        wait-duration: 2s
+      orderService:
+        max-attempts: 3
+        wait-duration: 2s
+
+  timelimiter:
+    instances:
+      userService:
+        timeout-duration: 5s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers
+  endpoint:
+    health:
+      show-details: always
+    circuitbreakers:
+      enabled: true
+
+logging:
+  level:
+    com.example.orderservice: DEBUG
+    feign: DEBUG

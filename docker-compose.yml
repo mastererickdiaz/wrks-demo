@@ -1,0 +1,161 @@
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  vault:
+    image: vault:1.13.3
+    ports:
+      - "8200:8200"
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=myroot
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  config-server:
+    build: 
+      context: ./config-server
+      dockerfile: Dockerfile
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - microservices-network
+    healthcheck:
+      test: 
+        - "CMD-SHELL"
+        - "curl -f http://localhost:8888/actuator/health/readiness || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    depends_on:
+      - vault
+
+  discovery-server:
+    build: 
+      context: ./discovery-server
+      dockerfile: Dockerfile
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - microservices-network
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - |
+          curl -f http://localhost:8761/actuator/health/readiness || exit 1;
+          curl -f http://localhost:8761/actuator/health/liveness || exit 1;
+          curl -f http://localhost:8761/eureka/apps || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      config-server:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - |
+          curl -f http://localhost:8080/actuator/health/readiness || exit 1;
+          curl -f http://localhost:8080/actuator/health/liveness || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - |
+          curl -f http://localhost:8081/actuator/health/readiness || exit 1;
+          curl -f http://localhost:8081/actuator/health/liveness || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - |
+          curl -f http://localhost:8082/actuator/health/readiness || exit 1;
+          curl -f http://localhost:8082/actuator/health/liveness || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  networks:
+    microservices-network:
+      driver: bridge
