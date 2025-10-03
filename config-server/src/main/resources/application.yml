@@ -11,17 +11,33 @@ spring:
           uri: https://github.com/mastererickdiaz/wrks-demo-config
           default-label: main
           search-paths: config
-    
+          timeout: 5
+          cloneOnStart: true
+
 eureka:
   client:
-    serviceUrl:
-      defaultZone: http://discovery-server:8761/eureka/
-      
+    service-url:
+      defaultZone: ${EUREKA_URL:http://eureka-user:eureka-pass@localhost:8761/eureka}
+    registry-fetch-interval-seconds: 10
+    initial-instance-info-replication-interval-seconds: 10
+    eureka-server-connect-timeout-seconds: 10
+    eureka-server-read-timeout-seconds: 10
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
 management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info,metrics,refresh
   endpoint:
     health:
       show-details: always
+
+logging:
+  level:
+    com.netflix.eureka: INFO
+    com.netflix.discovery: INFO
+    org.springframework.cloud.commons.util: DEBUG

@@ -34,7 +34,7 @@ echo "Esto puede tomar varios minutos..."
 check_health() {
     local service=$1
     local port=$2
-    local max_attempts=30
+    local max_attempts=3
     local attempt=1
 
     echo "Verificando $service en puerto $port..."

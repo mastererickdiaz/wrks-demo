@@ -12,12 +12,15 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka-user:eureka-pass@localhost:8761/eureka/
-    healthcheck:
-      enabled: true
+      defaultZone: ${EUREKA_URL:http://eureka-user:eureka-pass@localhost:8761/eureka}
+    registry-fetch-interval-seconds: 10
+    initial-instance-info-replication-interval-seconds: 10
+    eureka-server-connect-timeout-seconds: 10
+    eureka-server-read-timeout-seconds: 10
   instance:
     prefer-ip-address: true
-    instance-id: ${spring.application.name}:${random.uuid}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
 
 feign:
   client:
@@ -72,8 +75,3 @@ management:
       show-details: always
     circuitbreakers:
       enabled: true
-
-logging:
-  level:
-    com.example.orderservice: DEBUG
-    feign: DEBUG
