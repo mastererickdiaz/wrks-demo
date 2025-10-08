@@ -92,18 +92,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-user:eureka-pass@discovery-server:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:eureka:config-server
-
-      # Configuración de Vault
-      - SPRING_CLOUD_VAULT_TOKEN=myroot
-      - SPRING_CLOUD_VAULT_URI=http://vault:8200
-      - SPRING_CLOUD_VAULT_HOST=vault
-      - SPRING_CLOUD_VAULT_PORT=8200
-      - SPRING_CLOUD_VAULT_SCHEME=http
-      - SPRING_CLOUD_VAULT_FAIL_FAST=false
-      - SPRING_CLOUD_VAULT_KV_ENABLED=true
-      - SPRING_CLOUD_VAULT_KV_BACKEND_VERSION=2
-      - SPRING_CLOUD_VAULT_AUTHENTICATION=TOKEN
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
     depends_on:
       discovery-server:
         condition: service_healthy
@@ -139,13 +128,8 @@ services:
       # Configuración de Vault
       - SPRING_CLOUD_VAULT_TOKEN=myroot
       - SPRING_CLOUD_VAULT_URI=http://vault:8200
-      - SPRING_CLOUD_VAULT_HOST=vault
-      - SPRING_CLOUD_VAULT_PORT=8200
-      - SPRING_CLOUD_VAULT_SCHEME=http
-      - SPRING_CLOUD_VAULT_FAIL_FAST=false
-      - SPRING_CLOUD_VAULT_KV_ENABLED=true
-      - SPRING_CLOUD_VAULT_KV_BACKEND_VERSION=2
       - SPRING_CLOUD_VAULT_AUTHENTICATION=TOKEN
+      - SPRING_CLOUD_VAULT_FAIL_FAST=false
     depends_on:
       discovery-server:
         condition: service_healthy
@@ -179,13 +163,8 @@ services:
       # Configuración de Vault
       - SPRING_CLOUD_VAULT_TOKEN=myroot
       - SPRING_CLOUD_VAULT_URI=http://vault:8200
-      - SPRING_CLOUD_VAULT_HOST=vault
-      - SPRING_CLOUD_VAULT_PORT=8200
-      - SPRING_CLOUD_VAULT_SCHEME=http
-      - SPRING_CLOUD_VAULT_FAIL_FAST=false
-      - SPRING_CLOUD_VAULT_KV_ENABLED=true
-      - SPRING_CLOUD_VAULT_KV_BACKEND_VERSION=2
       - SPRING_CLOUD_VAULT_AUTHENTICATION=TOKEN
+      - SPRING_CLOUD_VAULT_FAIL_FAST=false
     depends_on:
       discovery-server:
         condition: service_healthy

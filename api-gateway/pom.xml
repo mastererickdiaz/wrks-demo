@@ -37,12 +37,6 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Config Vault -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-vault-config</artifactId>
-        </dependency>
-
         <!-- OpenAPI Documentation -->
         <dependency>
             <groupId>org.springdoc</groupId>
