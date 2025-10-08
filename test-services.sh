@@ -91,4 +91,4 @@ curl -s http://localhost:8080/actuator/metrics/http.server.requests | jq .
 
 echo "🏁 Pruebas completadas"
 echo "Verificando Eureka:"
-curl -s http://localhost:8761/eureka/apps | xmllint --format -
+curl -s http://discovery-server:8761/eureka/apps | xmllint --format -
