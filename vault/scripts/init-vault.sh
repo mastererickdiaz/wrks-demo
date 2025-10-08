@@ -5,7 +5,7 @@ set -e
 echo "Waiting for Vault to start..."
 sleep 5
 
-export VAULT_ADDR="http://localhost:8200"
+export VAULT_ADDR="http://vault:8200"
 export VAULT_TOKEN="myroot"
 
 # Esperar a que Vault esté listo
