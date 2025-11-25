@@ -73,16 +73,6 @@
             <artifactId>spring-cloud-starter-vault-config</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.authlete</groupId>
-            <artifactId>http-message-signatures</artifactId>
-            <version>1.7</version>
-        </dependency>
     </dependencies>
 
     <dependencyManagement>
