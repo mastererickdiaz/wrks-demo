@@ -26,5 +26,6 @@ build_service "api-gateway"
 # Construir servicios de negocio
 build_service "user-service"
 build_service "order-service"
+build_service "product-service"
 
 echo "¡Construcción completada exitosamente!"

@@ -2,13 +2,14 @@ package com.example.orderservice.config;
 
 import feign.Response;
 import feign.codec.ErrorDecoder;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 public class FeignErrorDecoder implements ErrorDecoder {
 
+    private static final Logger log = LoggerFactory.getLogger(FeignErrorDecoder.class);
     private final ErrorDecoder defaultErrorDecoder = new Default();
 
     @Override

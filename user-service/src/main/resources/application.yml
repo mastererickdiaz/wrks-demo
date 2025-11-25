@@ -4,3 +4,9 @@ server:
 spring:
   application:
     name: user-service
+  cloud:
+    vault:
+      authentication: TOKEN
+      token: "${VAULT_TOKEN}"
+      kv:
+        backend: "secret"
