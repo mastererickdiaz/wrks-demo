@@ -14,6 +14,6 @@ COPY target/product-service-1.0.0.jar app.jar
 RUN ls -la /app/
 
 # Exponer puerto
-EXPOSE 8082
+EXPOSE 8083
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

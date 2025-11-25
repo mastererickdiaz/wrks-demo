@@ -34,23 +34,26 @@ public class OrderService {
     public Order createOrder(OrderRequest request) {
         log.info("Creando orden para usuario: {} y producto: {}", request.getUserId(), request.getProductId());
 
-        // Obtener usuario
+        log.info("Obteniendo usuario...");
         User user = userClientService.getUserById(request.getUserId());
+        log.info("Usuario obtenido: {}", user);
         if (user.getActive() == null || !user.getActive()) {
             log.warn("Usuario inactivo o en modo fallback, procediendo con la orden");
         }
 
-        // Obtener producto
+        log.info("Obteniendo producto...");
         Product product = productClientService.getProductById(request.getProductId());
+        log.info("Producto obtenido: {}", product);
 
-        // Crear orden
+        log.info("Creando orden...");
         Order order = new Order(idCounter.getAndIncrement(), request.getUserId(),
                 product.id(), product.name(), request.getQuantity(),
                 product.price(), Order.OrderStatus.PENDING,
                 LocalDateTime.now());
+        log.info("Orden creada en memoria: {}", order);
 
         orders.add(order);
-        log.info("Orden creada exitosamente: {}", order.getId());
+        log.info("Orden añadida a la lista. Total de órdenes: {}", orders.size());
         return order;
     }
 

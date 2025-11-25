@@ -15,6 +15,7 @@ SERVICES=(
     ["API Gateway"]="8080"
     ["User Service"]="8081"
     ["Order Service"]="8082"
+    ["Product Service"]="8083"
 )
 
 # ==============================================================================
@@ -115,13 +116,34 @@ echo "   Respuesta del servicio de usuarios:"
 echo "$USER_RESPONSE" | jq .
 echo "---"
 
+## PRUEBA 2.5: Creación de Producto (POST /api/products)
+echo "## 2.5. Creando producto de prueba (Laptop Pro)..."
+PRODUCT_DATA='{
+    "name": "Laptop Pro",
+    "description": "Powerful laptop for professionals",
+    "price": 1499.99
+}'
+
+PRODUCT_RESPONSE=$(curl -s -X POST "$API_GATEWAY_HOST/api/products" \
+  -H "Content-Type: application/json" \
+  -d "$PRODUCT_DATA")
+
+if ! echo "$PRODUCT_RESPONSE" | jq -e '.id' > /dev/null 2>&1; then
+    fail "Fallo al crear producto. Respuesta: $PRODUCT_RESPONSE"
+fi
+
+PRODUCT_ID=$(echo "$PRODUCT_RESPONSE" | jq -r '.id')
+echo "   ✅ Producto creado. ID: $PRODUCT_ID"
+echo "   Respuesta del servicio de productos:"
+echo "$PRODUCT_RESPONSE" | jq .
+echo "---"
+
 ## PRUEBA 3: Creación de Orden (POST /api/orders)
-echo "## 3. Creando orden de prueba para el usuario $USER_ID..."
+echo "## 3. Creando orden de prueba para el usuario $USER_ID y producto $PRODUCT_ID..."
 ORDER_DATA="{
     \"userId\": \"$USER_ID\",
-    \"productName\": \"Laptop Gaming\",
-    \"quantity\": 1,
-    \"price\": 999.99
+    \"productId\": \"$PRODUCT_ID\",
+    \"quantity\": 1
 }"
 
 ORDER_RESPONSE=$(curl -s -X POST "$API_GATEWAY_HOST/api/orders" \
@@ -142,8 +164,135 @@ echo "---"
 echo "## 4. Verificación de Integración (GET)..."
 echo "   📋 Listando usuarios (Debería incluir a Juan Pérez):"
 curl -s "$API_GATEWAY_HOST/api/users" | jq '.[] | select(.id == "'"$USER_ID"'")'
+echo "   📋 Listando productos (Debería incluir a Laptop Pro):"
+curl -s "$API_GATEWAY_HOST/api/products" | jq '.[] | select(.id == "'"$PRODUCT_ID"'")'
 echo "   📋 Listando órdenes (Debería incluir la Orden $ORDER_ID):"
 curl -s "$API_GATEWAY_HOST/api/orders" | jq '.[] | select(.id == "'"$ORDER_ID"'")'
+echo "---"
+
+## PRUEBA 4.1: Actualización de Usuario (PUT /api/users/{id})
+echo "## 4.1. Actualizando usuario de prueba (Juan Pérez -> Juan Pérez Actualizado)..."
+UPDATED_USER_DATA='{
+    "name": "Juan Pérez Actualizado",
+    "email": "'$(echo $USER_RESPONSE | jq -r .email)'",
+    "phone": "+987654321"
+}'
+
+UPDATE_USER_RESPONSE=$(curl -s -X PUT "$API_GATEWAY_HOST/api/users/$USER_ID" \
+  -H "Content-Type: application/json" \
+  -d "$UPDATED_USER_DATA")
+
+if ! echo "$UPDATE_USER_RESPONSE" | jq -e '.name == "Juan Pérez Actualizado"' > /dev/null 2>&1; then
+    fail "Fallo al actualizar usuario. Respuesta: $UPDATE_USER_RESPONSE"
+fi
+echo "   ✅ Usuario actualizado. ID: $USER_ID"
+echo "   Respuesta del servicio de usuarios:"
+echo "$UPDATE_USER_RESPONSE" | jq .
+echo "---"
+
+## PRUEBA 4.2: Eliminación de Usuario (DELETE /api/users/{id})
+echo "## 4.2. Eliminando usuario de prueba..."
+# Crear un nuevo usuario para eliminar
+DELETE_USER_DATA='{
+    "name": "Usuario a Eliminar",
+    "email": "delete-test-'"$RANDOM"'@example.com",
+    "phone": "+111222333"
+}'
+DELETE_USER_RESPONSE=$(curl -s -X POST "$API_GATEWAY_HOST/api/users" \
+  -H "Content-Type: application/json" \
+  -d "$DELETE_USER_DATA")
+DELETE_USER_ID=$(echo "$DELETE_USER_RESPONSE" | jq -r '.id')
+echo "   ✅ Usuario a eliminar creado. ID: $DELETE_USER_ID"
+
+# Eliminar el usuario
+DELETE_RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$API_GATEWAY_HOST/api/users/$DELETE_USER_ID")
+if [ "$DELETE_RESPONSE_CODE" -ne 204 ]; then
+    fail "Fallo al eliminar usuario. Código de respuesta: $DELETE_RESPONSE_CODE"
+fi
+echo "   ✅ Usuario eliminado. ID: $DELETE_USER_ID"
+
+# Verificar que el usuario no se puede obtener
+GET_DELETED_USER_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_GATEWAY_HOST/api/users/$DELETE_USER_ID")
+if [ "$GET_DELETED_USER_CODE" -ne 404 ]; then
+    fail "El usuario eliminado todavía se puede obtener. Código de respuesta: $GET_DELETED_USER_CODE"
+fi
+echo "   ✅ El usuario eliminado no se puede obtener (404 esperado)."
+echo "---"
+
+## PRUEBA 4.3: Actualización de Producto (PUT /api/products/{id})
+echo "## 4.3. Actualizando producto de prueba..."
+UPDATED_PRODUCT_DATA='{
+    "name": "Laptop Pro X",
+    "description": "An even more powerful laptop",
+    "price": 1599.99
+}'
+UPDATE_PRODUCT_RESPONSE=$(curl -s -X PUT "$API_GATEWAY_HOST/api/products/$PRODUCT_ID" \
+  -H "Content-Type: application/json" \
+  -d "$UPDATED_PRODUCT_DATA")
+
+if ! echo "$UPDATE_PRODUCT_RESPONSE" | jq -e '.name == "Laptop Pro X"' > /dev/null 2>&1; then
+    fail "Fallo al actualizar producto. Respuesta: $UPDATE_PRODUCT_RESPONSE"
+fi
+echo "   ✅ Producto actualizado. ID: $PRODUCT_ID"
+echo "   Respuesta del servicio de productos:"
+echo "$UPDATE_PRODUCT_RESPONSE" | jq .
+echo "---"
+
+## PRUEBA 4.4: Eliminación de Producto (DELETE /api/products/{id})
+echo "## 4.4. Eliminando producto de prueba..."
+# Crear un nuevo producto para eliminar
+DELETE_PRODUCT_DATA='{
+    "name": "Producto a Eliminar",
+    "description": "Producto de prueba",
+    "price": 9.99
+}'
+DELETE_PRODUCT_RESPONSE=$(curl -s -X POST "$API_GATEWAY_HOST/api/products" \
+    -H "Content-Type: application/json" \
+    -d "$DELETE_PRODUCT_DATA")
+DELETE_PRODUCT_ID=$(echo "$DELETE_PRODUCT_RESPONSE" | jq -r '.id')
+echo "   ✅ Producto a eliminar creado. ID: $DELETE_PRODUCT_ID"
+
+# Eliminar el producto
+DELETE_PRODUCT_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$API_GATEWAY_HOST/api/products/$DELETE_PRODUCT_ID")
+if [ "$DELETE_PRODUCT_CODE" -ne 204 ]; then
+    fail "Fallo al eliminar producto. Código de respuesta: $DELETE_PRODUCT_CODE"
+fi
+echo "   ✅ Producto eliminado. ID: $DELETE_PRODUCT_ID"
+
+# Verificar que el producto no se puede obtener
+GET_DELETED_PRODUCT_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_GATEWAY_HOST/api/products/$DELETE_PRODUCT_ID")
+if [ "$GET_DELETED_PRODUCT_CODE" -ne 404 ]; then
+    fail "El producto eliminado todavía se puede obtener. Código de respuesta: $GET_DELETED_PRODUCT_CODE"
+fi
+echo "   ✅ El producto eliminado no se puede obtener (404 esperado)."
+echo "---"
+
+## PRUEBA 4.5: Obtener Orden Individual (GET /api/orders/{id})
+echo "## 4.5. Obteniendo orden individual..."
+GET_ORDER_RESPONSE=$(curl -s "$API_GATEWAY_HOST/api/orders/$ORDER_ID")
+if ! echo "$GET_ORDER_RESPONSE" | jq -e '.id == '$ORDER_ID'' > /dev/null 2>&1; then
+    fail "Fallo al obtener la orden. Respuesta: $GET_ORDER_RESPONSE"
+fi
+echo "   ✅ Orden obtenida. ID: $ORDER_ID"
+echo "   Respuesta del servicio de órdenes:"
+echo "$GET_ORDER_RESPONSE" | jq .
+echo "---"
+
+## PRUEBA 4.6: Intentar crear orden con usuario inválido
+echo "## 4.6. Intentando crear orden con usuario inválido..."
+INVALID_ORDER_DATA="{
+    \"userId\": \"999999\",
+    \"productId\": \"$PRODUCT_ID\",
+    \"quantity\": 1
+}"
+INVALID_ORDER_RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_GATEWAY_HOST/api/orders" \
+  -H "Content-Type: application/json" \
+  -d "$INVALID_ORDER_DATA")
+
+if [ "$INVALID_ORDER_RESPONSE_CODE" -ne 500 ] && [ "$INVALID_ORDER_RESPONSE_CODE" -ne 503 ]; then
+    fail "La creación de orden con usuario inválido debería fallar con 500 o 503, pero se obtuvo $INVALID_ORDER_RESPONSE_CODE"
+fi
+echo "   ✅ La creación de orden con usuario inválido falló como se esperaba (Código: $INVALID_ORDER_RESPONSE_CODE)."
 echo "---"
 
 ## PRUEBA 5: Verificación de Eureka y Métricas
