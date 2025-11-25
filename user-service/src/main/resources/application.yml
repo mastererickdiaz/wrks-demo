@@ -10,3 +10,14 @@ spring:
       token: "${VAULT_TOKEN}"
       kv:
         backend: "secret"
+
+http:
+  signature:
+    key-id: "user-service"
+    private-key-file: "file:./security-keys/private_key.pem"
+    public-key-files: "{'order-service':'file:./security-keys/public_key.pem'}"
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    com.example.httpsignature: DEBUG

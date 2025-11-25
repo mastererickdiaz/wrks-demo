@@ -130,6 +130,11 @@ services:
       - SPRING_CLOUD_VAULT_URI=http://vault:8200
       - SPRING_CLOUD_VAULT_AUTHENTICATION=TOKEN
       - SPRING_CLOUD_VAULT_FAIL_FAST=false
+
+      # Configuración para HTTP Signatures
+      - HTTP_SIGNATURE_PUBLIC-KEY-FILES={'order-service':'file:/app/security-keys/public_key.pem'} # user-service confía en order-service
+    volumes:
+      - ./security-keys:/app/security-keys:ro
     depends_on:
       discovery-server:
         condition: service_healthy
@@ -165,6 +170,12 @@ services:
       - SPRING_CLOUD_VAULT_URI=http://vault:8200
       - SPRING_CLOUD_VAULT_AUTHENTICATION=TOKEN
       - SPRING_CLOUD_VAULT_FAIL_FAST=false
+
+      # Configuración para HTTP Signatures
+      - HTTP_SIGNATURE_PRIVATE-KEY-FILE=file:/app/security-keys/private_key.pem
+      - HTTP_SIGNATURE_PUBLIC-KEY-FILES={'order-service':'file:/app/security-keys/public_key.pem'} # order-service confía en sí mismo para las pruebas
+    volumes:
+      - ./security-keys:/app/security-keys:ro
     depends_on:
       discovery-server:
         condition: service_healthy
@@ -200,6 +211,11 @@ services:
       - SPRING_CLOUD_VAULT_URI=http://vault:8200
       - SPRING_CLOUD_VAULT_AUTHENTICATION=TOKEN
       - SPRING_CLOUD_VAULT_FAIL_FAST=false
+
+      # Configuración para HTTP Signatures
+      - HTTP_SIGNATURE_PUBLIC-KEY-FILES={'order-service':'file:/app/security-keys/public_key.pem'} # product-service confía en order-service
+    volumes:
+      - ./security-keys:/app/security-keys:ro
     depends_on:
       discovery-server:
         condition: service_healthy
