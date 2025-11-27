@@ -80,7 +80,6 @@ public class HttpSignatureService {
     log.info("=== SIGNATURE VERIFICATION DEBUG ===");
     log.info("Method: {}", method.name());
     log.info("URI Path: {}", uri.getPath());
-    log.info("URI Authority: {}", uri.getAuthority());
     log.info("All Headers: {}", headers);
 
     for (String component : signedComponents) {

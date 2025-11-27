@@ -52,8 +52,9 @@ echo "Writing secrets for order-service..."
 
 # Almacenar claves y mensaje para order-service
 vault kv put kv/order-service/docker \
-  privateKey=@/vault/security-keys/private_key.pem \
-  publicKey=@/vault/security-keys/public_key.pem \
+  "http.signature.key-id"=order-service-key \
+  "http.signature.private-key"=@/vault/security-keys/private_key.pem \
+  "http.signature.public-keys.order-service-key"=@/vault/security-keys/public_key.pem \
   processing.message="[FROM VAULT] Processing new order..."
 echo "✅ Secrets for order-service stored in Vault at kv/order-service/docker"
 
@@ -62,13 +63,14 @@ echo "✅ Secrets for order-service stored in Vault at kv/order-service/docker"
 # ============================================
 
 echo "Creating secrets for user-service..."
-# Almacenar todas las configuraciones necesarias para user-service
+# Almacenar todas las configuraciones necesarias para user-service, incluyendo la clave pública de order-service
 vault kv put kv/user-service/docker \
   database.url="jdbc:h2:mem:testdb" \
   database.username="sa" \
   database.password="sa" \
   encryption.key="user-enc-key-456" \
-  h2.console.password="console-pass-789"
+  h2.console.password="console-pass-789" \
+  "http.signature.public-keys.order-service-key"=@/vault/security-keys/public_key.pem
 echo "✅ Secrets for user-service stored in Vault at kv/user-service/docker"
 
 # ============================================

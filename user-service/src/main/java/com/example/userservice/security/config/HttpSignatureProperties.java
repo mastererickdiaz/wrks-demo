@@ -1,4 +1,4 @@
-package com.example.orderservice.security.config;
+package com.example.userservice.security.config;
 
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -6,25 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "http.signature")
 public class HttpSignatureProperties {
 
-    private String keyId;
-    private String privateKey;
     private Map<String, String> publicKeys;
-
-    public String getKeyId() {
-        return keyId;
-    }
-
-    public void setKeyId(String keyId) {
-        this.keyId = keyId;
-    }
-
-    public String getPrivateKey() {
-        return privateKey;
-    }
-
-    public void setPrivateKey(String privateKey) {
-        this.privateKey = privateKey;
-    }
 
     public Map<String, String> getPublicKeys() {
         return publicKeys;

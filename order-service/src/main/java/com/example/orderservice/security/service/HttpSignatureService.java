@@ -45,15 +45,13 @@ public class HttpSignatureService {
 
   @PostConstruct
   private void init() {
-    if (signatureProps.getPrivateKeyFile() != null) {
+    if (signatureProps.getPrivateKey() != null) {
       try {
-        String privateKeyPath = signatureProps.getPrivateKeyFile().replace("file:", "");
-        this.privateKey = securityKeyUtils.loadPrivateKeyFromPem(privateKeyPath);
-        log.info("Clave privada para firmas HTTP cargada exitosamente.");
+        this.privateKey = securityKeyUtils.loadPrivateKeyFromPemContent(signatureProps.getPrivateKey());
+        log.info("Clave privada para firmas HTTP cargada exitosamente desde Vault.");
       } catch (IOException e) {
-        log.error("Error al cargar la clave privada desde {}", signatureProps.getPrivateKeyFile(),
-            e);
-        throw new RuntimeException("Failed to load private key", e);
+        log.error("Error al cargar la clave privada desde Vault", e);
+        throw new RuntimeException("Failed to load private key from Vault", e);
       }
     }
   }
@@ -169,7 +167,6 @@ public class HttpSignatureService {
     log.info("=== SIGNATURE VERIFICATION/CREATION DEBUG ===");
     log.info("Method: {}", method.name());
     log.info("URI Path: {}", uri.getPath());
-    log.info("URI Authority: {}", uri.getAuthority());
 
     for (String component : signedComponents) {
       sb.append("\"").append(component).append("\": ");

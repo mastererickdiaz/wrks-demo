@@ -32,8 +32,7 @@ public class UserClientService {
 
     public User getUserFallback(Long userId, Exception e) {
         log.warn("Fallback para usuario ID: {}, causa: {}", userId, e.getMessage());
-        return new User(userId, "Usuario no disponible - Fallback", "fallback@example.com", null,
-                false);
+        throw new RuntimeException("El servicio de usuario no está disponible.", e);
     }
 
     @CircuitBreaker(name = "userService", fallbackMethod = "userExistsFallback")
@@ -47,6 +46,6 @@ public class UserClientService {
 
     public boolean userExistsFallback(Long userId, Exception e) {
         log.warn("Fallback para la verificación de existencia del usuario ID: {}, causa: {}", userId, e.getMessage());
-        return false; // Asumir que el usuario no existe si el servicio no responde
+        throw new RuntimeException("El servicio de usuario no está disponible.", e);
     }
 }

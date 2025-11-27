@@ -295,6 +295,32 @@ fi
 echo "   ✅ La creación de orden con usuario inválido falló como se esperaba (Código: $INVALID_ORDER_RESPONSE_CODE)."
 echo "---"
 
+## PRUEBA 4.7: Intentar crear orden con producto inválido
+echo "## 4.7. Intentando crear orden con producto inválido..."
+INVALID_PRODUCT_ORDER_DATA="{
+    \"userId\": \"$USER_ID\",
+    \"productId\": \"999999\",
+    \"quantity\": 1
+}"
+INVALID_PRODUCT_ORDER_RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_GATEWAY_HOST/api/orders" \
+  -H "Content-Type: application/json" \
+  -d "$INVALID_PRODUCT_ORDER_DATA")
+
+if [ "$INVALID_PRODUCT_ORDER_RESPONSE_CODE" -ne 500 ] && [ "$INVALID_PRODUCT_ORDER_RESPONSE_CODE" -ne 503 ]; then
+    fail "La creación de orden con producto inválido debería fallar con 500 o 503, pero se obtuvo $INVALID_PRODUCT_ORDER_RESPONSE_CODE"
+fi
+echo "   ✅ La creación de orden con producto inválido falló como se esperaba (Código: $INVALID_PRODUCT_ORDER_RESPONSE_CODE)."
+echo "---"
+
+## PRUEBA 4.8: Intentar obtener una orden inexistente
+echo "## 4.8. Intentando obtener una orden inexistente..."
+GET_NON_EXISTENT_ORDER_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_GATEWAY_HOST/api/orders/999999")
+if [ "$GET_NON_EXISTENT_ORDER_CODE" -ne 404 ]; then
+    fail "La obtención de una orden inexistente debería fallar con 404, pero se obtuvo $GET_NON_EXISTENT_ORDER_CODE"
+fi
+echo "   ✅ La obtención de una orden inexistente falló como se esperaba (Código: 404)."
+echo "---"
+
 ## PRUEBA 5: Verificación de Eureka y Métricas
 echo "## 5. Verificación de Eureka y Métricas..."
 echo "   🔍 Estado de Eureka (Servicios registrados):"
@@ -306,6 +332,20 @@ else
 fi
 echo -e "\n   📊 Métricas del API Gateway (http.server.requests):"
 curl -s "$API_GATEWAY_HOST/actuator/metrics/http.server.requests" | jq .
+echo "---"
+
+## PRUEBA 5.1: Verificación de Circuit Breakers
+echo "## 5.1. Verificación de estado de los Circuit Breakers en order-service..."
+CB_STATE=$(curl -s http://localhost:8082/actuator/circuitbreakers | jq -r '.circuitBreakers.orderService.state')
+if [ "$CB_STATE" == "OPEN" ]; then
+    fail "El circuit breaker 'orderService' está en estado OPEN."
+fi
+echo "   ✅ Circuit breaker 'orderService' está en estado: $CB_STATE"
+CB_STATE_USER=$(curl -s http://localhost:8082/actuator/circuitbreakers | jq -r '.circuitBreakers.userService.state')
+if [ "$CB_STATE_USER" == "OPEN" ]; then
+    fail "El circuit breaker 'userService' está en estado OPEN."
+fi
+echo "   ✅ Circuit breaker 'userService' está en estado: $CB_STATE_USER"
 echo "---"
 
 echo "🎉 Pruebas de integración completadas exitosamente."

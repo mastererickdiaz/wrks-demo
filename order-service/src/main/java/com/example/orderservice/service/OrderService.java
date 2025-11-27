@@ -70,10 +70,7 @@ public class OrderService {
 
     public Order createOrderFallback(OrderRequest request, Exception e) {
         log.error("Fallback para crear orden, causa: {}", e.getMessage());
-
-        // Crear orden básica en modo fallback
-        return new Order(-1L, request.getUserId(), request.getProductId(), "Producto no disponible",
-                request.getQuantity(), null, Order.OrderStatus.PENDING, LocalDateTime.now());
+        throw new RuntimeException("Error al crear la orden. El servicio de usuario no está disponible.", e);
     }
 
     public List<Order> getAllOrders() {
