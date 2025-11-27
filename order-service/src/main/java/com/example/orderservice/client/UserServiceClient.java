@@ -7,7 +7,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import com.example.orderservice.config.FeignConfig;
 import com.example.orderservice.model.User;
 
+import io.github.resilience4j.retry.annotation.Retry;
+
 @FeignClient(name = "user-service", configuration = FeignConfig.class)
+@Retry(name = "user-service")
 public interface UserServiceClient {
 
     @GetMapping("/api/users/{id}")

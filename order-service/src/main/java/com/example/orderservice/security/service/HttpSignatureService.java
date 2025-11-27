@@ -70,7 +70,7 @@ public class HttpSignatureService {
 
     // Definir los componentes a firmar
     String[] componentsToSign =
-        new String[] {"@method", "@path", "@authority", "date", "content-digest"};
+        new String[] {"@method", "@path", "date", "content-digest"};
 
     // Añadir headers requeridos
     headers.setDate(Instant.now());
@@ -78,7 +78,7 @@ public class HttpSignatureService {
       headers.set("Content-Digest", securityKeyUtils.computeDigest(body));
     } else {
       // Si no hay body, no se incluye content-digest en la firma
-      componentsToSign = new String[] {"@method", "@path", "@authority", "date"};
+      componentsToSign = new String[] {"@method", "@path", "date"};
     }
 
     // Construir el Signature-Input header
@@ -183,12 +183,6 @@ public class HttpSignatureService {
           break;
         case "@query":
           value = uri.getQuery() != null ? "?" + uri.getQuery() : "";
-          break;
-        case "@authority":
-          value = headers.getFirst("Host");
-          if (value == null) {
-            value = uri.getAuthority();
-          }
           break;
         case "content-digest":
           value = headers.getFirst("Content-Digest");
