@@ -33,8 +33,13 @@ services:
     volumes:
       - vault_data:/vault/data
       - ./vault/scripts:/vault/scripts
+      - ./security-keys:/vault/security-keys:ro
     entrypoint: >
-      sh -c "vault server -dev -dev-root-token-id=myroot -dev-listen-address=0.0.0.0:8200"
+      sh -c "
+        vault server -dev -dev-root-token-id=myroot -dev-listen-address=0.0.0.0:8200 &
+        PID=$$!
+        sh /vault/scripts/init-vault.sh &
+        wait $$PID"
 
   discovery-server:
     build: 
@@ -132,7 +137,8 @@ services:
       - SPRING_CLOUD_VAULT_FAIL_FAST=false
 
       # Configuración para HTTP Signatures
-      - HTTP_SIGNATURE_PUBLIC-KEY-FILES={'order-service':'file:/app/security-keys/public_key.pem'} # user-service confía en order-service
+      - HTTP_SIGNATURE_PUBLIC-KEY-FILES={'order-service-key':'file:/app/security-keys/public_key.pem'} # user-service confía en order-service
+      - HTTP_SIGNATURE_AUTHORITIES={'order-service-key':'SERVICE','product-service':'SERVICE'}
     volumes:
       - ./security-keys:/app/security-keys:ro
     depends_on:
@@ -148,47 +154,6 @@ services:
       test:
         - "CMD-SHELL"
         - "curl -f http://localhost:8081/actuator/health || exit 1"
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-
-  order-service:
-    build:
-      context: ./order-service
-      dockerfile: Dockerfile
-    container_name: order-service
-    ports:
-      - "8082:8082"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-user:eureka-pass@discovery-server:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:eureka:config-server
-
-      # Configuración de Vault
-      - SPRING_CLOUD_VAULT_TOKEN=myroot
-      - SPRING_CLOUD_VAULT_URI=http://vault:8200
-      - SPRING_CLOUD_VAULT_AUTHENTICATION=TOKEN
-      - SPRING_CLOUD_VAULT_FAIL_FAST=false
-
-      # Configuración para HTTP Signatures
-      - HTTP_SIGNATURE_PRIVATE-KEY-FILE=file:/app/security-keys/private_key.pem
-      - HTTP_SIGNATURE_PUBLIC-KEY-FILES={'order-service':'file:/app/security-keys/public_key.pem'} # order-service confía en sí mismo para las pruebas
-    volumes:
-      - ./security-keys:/app/security-keys:ro
-    depends_on:
-      discovery-server:
-        condition: service_healthy
-      config-server:
-        condition: service_healthy
-      vault:
-        condition: service_healthy
-    networks:
-      - microservices-network
-    healthcheck:
-      test:
-        - "CMD-SHELL"
-        - "curl -f http://localhost:8082/actuator/health || exit 1"
       interval: 30s
       timeout: 10s
       retries: 5
@@ -213,7 +178,7 @@ services:
       - SPRING_CLOUD_VAULT_FAIL_FAST=false
 
       # Configuración para HTTP Signatures
-      - HTTP_SIGNATURE_PUBLIC-KEY-FILES={'order-service':'file:/app/security-keys/public_key.pem'} # product-service confía en order-service
+      - HTTP_SIGNATURE_PUBLIC-KEY-FILES={'order-service-key':'file:/app/security-keys/public_key.pem'} # product-service confía en order-service
     volumes:
       - ./security-keys:/app/security-keys:ro
     depends_on:
@@ -229,6 +194,48 @@ services:
       test:
         - "CMD-SHELL"
         - "curl -f http://localhost:8083/actuator/health || exit 1"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-user:eureka-pass@discovery-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:eureka:config-server
+
+      # Configuración de Vault
+      - SPRING_CLOUD_VAULT_TOKEN=myroot
+      - SPRING_CLOUD_VAULT_URI=http://vault:8200
+      - SPRING_CLOUD_VAULT_AUTHENTICATION=TOKEN
+      - SPRING_CLOUD_VAULT_FAIL_FAST=false
+
+      # Configuración para HTTP Signatures
+      - HTTP_SIGNATURE_KEY-ID=order-service-key # El keyId que usará order-service para firmar
+      - HTTP_SIGNATURE_PRIVATE-KEY-FILE=file:/app/security-keys/private_key.pem
+      - HTTP_SIGNATURE_PUBLIC-KEY-FILES={'order-service-key':'file:/app/security-keys/public_key.pem'} # order-service confía en sí mismo para las pruebas
+    volumes:
+      - ./security-keys:/app/security-keys:ro
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "curl -f http://localhost:8082/actuator/health || exit 1"
       interval: 30s
       timeout: 10s
       retries: 5

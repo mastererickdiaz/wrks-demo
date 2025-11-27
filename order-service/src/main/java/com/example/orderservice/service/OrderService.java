@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.example.orderservice.dto.OrderRequest;
@@ -27,6 +28,9 @@ public class OrderService {
     private final AtomicLong idCounter = new AtomicLong(1);
     private final List<Order> orders = new ArrayList<>();
 
+    @Value("${processing.message:Default message}")
+    private String processingMessage;
+
     public OrderService(UserClientService userClientService,
             ProductClientService productClientService) {
         this.userClientService = userClientService;
@@ -38,6 +42,9 @@ public class OrderService {
     public Order createOrder(OrderRequest request) {
         log.info("Creando orden para usuario: {} y producto: {}", request.getUserId(),
                 request.getProductId());
+
+        // Imprimir el mensaje obtenido de Vault
+        log.info(processingMessage);
 
         // Obtener usuario
         User user = userClientService.getUserById(request.getUserId());
@@ -81,13 +88,12 @@ public class OrderService {
     @Retry(name = "orderService")
     public List<Order> getUserOrders(Long userId) {
         log.info("Buscando órdenes para el usuario con ID: {}", userId);
-        // Verificar que el usuario existe antes de buscar sus órdenes.
-        User user = userClientService.getUserById(userId);
 
-        // Si el usuario es null o está en modo fallback sin un ID real, podría indicar un problema.
-        if (user == null || user.getId() == null) {
+        // Verificar que el usuario existe antes de buscar sus órdenes
+        if (!userClientService.userExists(userId)) {
             throw new UserNotFoundException(
-                    "Usuario no encontrado o servicio no disponible, ID: " + userId);
+                    "No se pueden obtener las órdenes. Usuario no encontrado o servicio no disponible, ID: "
+                            + userId);
         }
 
         return orders.stream().filter(order -> order.getUserId().equals(userId)).toList();
@@ -96,6 +102,6 @@ public class OrderService {
     public List<Order> getUserOrdersFallback(Long userId, Exception e) {
         log.error("Fallback para obtener órdenes del usuario {}, causa: {}", userId,
                 e.getMessage());
-        return List.of(); // Devolver una lista vacía como fallback
+        return List.of();
     }
 }

@@ -11,7 +11,7 @@ HOST="localhost:8080"
 METHOD="GET"
 PATH_URL="/api/internal/orders/user/1"
 PRIVATE_KEY_FILE="./security-keys/private_key.pem"
-KEY_ID="order-service"
+KEY_ID="order-service-key"
 
 # --- Cabeceras ---
 REQUEST_DATE=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")

@@ -21,20 +21,9 @@ public class SignatureConfig {
   }
 
   @Bean
-  public HttpSignatureService httpSignatureService(SecurityKeyUtils securityKeyUtils) {
-    return new HttpSignatureService(securityKeyUtils);
-  }
-
-  @Bean
-  public PrivateKey privateKey(SecurityKeyUtils securityKeyUtils,
-      @Value("${http.signature.private-key-file:}") String privateKeyFile) throws Exception {
-
-    if (!privateKeyFile.isEmpty()) {
-      String filePath = privateKeyFile.replace("file:", "");
-      return securityKeyUtils.loadPrivateKeyFromPem(filePath);
-    } else {
-      throw new IllegalStateException("Private key file not configured");
-    }
+  public HttpSignatureService httpSignatureService(SecurityKeyUtils securityKeyUtils,
+      HttpSignatureProperties signatureProps) {
+    return new HttpSignatureService(securityKeyUtils, signatureProps);
   }
 
   @Bean

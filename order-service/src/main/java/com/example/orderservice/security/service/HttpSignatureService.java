@@ -1,12 +1,18 @@
 package com.example.orderservice.security.service;
 
+import java.io.IOException;
 import java.net.URI;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,21 +20,104 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
+import com.example.orderservice.security.config.HttpSignatureProperties;
 import com.example.orderservice.security.util.SecurityKeyUtils;
+
+import jakarta.annotation.PostConstruct;
 
 @Service
 public class HttpSignatureService {
 
   private static final Logger log = LoggerFactory.getLogger(HttpSignatureService.class);
   private final SecurityKeyUtils securityKeyUtils;
+  private final HttpSignatureProperties signatureProps;
+  private PrivateKey privateKey;
 
   private static final Pattern SIGNATURE_INPUT_PATTERN =
       Pattern.compile("sig1=\\(([^)]+)\\);\\s*created=(\\d+);\\s*keyId=\"([^\"]+)\"");
   private static final Pattern SIGNATURE_PATTERN = Pattern.compile("sig1=:([^:]+):");
 
-  public HttpSignatureService(SecurityKeyUtils securityKeyUtils) {
+  public HttpSignatureService(SecurityKeyUtils securityKeyUtils,
+      HttpSignatureProperties signatureProps) {
     this.securityKeyUtils = securityKeyUtils;
+    this.signatureProps = signatureProps;
   }
+
+  @PostConstruct
+  private void init() {
+    if (signatureProps.getPrivateKeyFile() != null) {
+      try {
+        String privateKeyPath = signatureProps.getPrivateKeyFile().replace("file:", "");
+        this.privateKey = securityKeyUtils.loadPrivateKeyFromPem(privateKeyPath);
+        log.info("Clave privada para firmas HTTP cargada exitosamente.");
+      } catch (IOException e) {
+        log.error("Error al cargar la clave privada desde {}", signatureProps.getPrivateKeyFile(),
+            e);
+        throw new RuntimeException("Failed to load private key", e);
+      }
+    }
+  }
+
+  public HttpHeaders createSignatureHeaders(HttpMethod method, URI uri, HttpHeaders headers,
+      String body) {
+    if (privateKey == null) {
+      throw new IllegalStateException("La clave privada no está configurada para firmar.");
+    }
+
+    HttpHeaders signedHeaders = new HttpHeaders();
+    long created = Instant.now().getEpochSecond();
+    String keyId = signatureProps.getKeyId();
+
+    // Definir los componentes a firmar
+    String[] componentsToSign =
+        new String[] {"@method", "@path", "@authority", "date", "content-digest"};
+
+    // Añadir headers requeridos
+    headers.setDate(Instant.now());
+    if (body != null && !body.isEmpty()) {
+      headers.set("Content-Digest", securityKeyUtils.computeDigest(body));
+    } else {
+      // Si no hay body, no se incluye content-digest en la firma
+      componentsToSign = new String[] {"@method", "@path", "@authority", "date"};
+    }
+
+    // Construir el Signature-Input header
+    String signatureInput = String.format("sig1=(%s); created=%d; keyId=\"%s\"",
+        Stream.of(componentsToSign).map(s -> "\"" + s + "\"").collect(Collectors.joining(" ")),
+        created, keyId);
+
+    // Construir el string base para la firma
+    String baseString =
+        buildBaseString(method, uri, headers, body, componentsToSign, signatureInput);
+    log.debug("Signing base string:\n---\n{}\n---", baseString);
+
+    try {
+      // Firmar el string base
+      Signature signer = Signature.getInstance("SHA256withRSA");
+      signer.initSign(privateKey);
+      signer.update(baseString.getBytes());
+      byte[] signature = signer.sign();
+
+      // Formatear el header Signature
+      String signatureHeader = "sig1=:" + Base64.getEncoder().encodeToString(signature) + ":";
+
+      signedHeaders.set("Signature-Input", signatureInput);
+      signedHeaders.set("Signature", signatureHeader);
+
+      // Añadir los headers utilizados para la firma a los headers de la petición
+      signedHeaders.setDate(headers.getDate());
+      if (headers.containsKey("Content-Digest")) {
+        signedHeaders.set("Content-Digest", headers.getFirst("Content-Digest"));
+      }
+
+      return signedHeaders;
+
+    } catch (Exception e) {
+      log.error("Error al crear la firma HTTP", e);
+      throw new RuntimeException("Failed to create HTTP signature", e);
+    }
+  }
+
 
   public SignatureVerificationResult verifySignature(Map<String, PublicKey> publicKeys,
       HttpMethod method, URI uri, HttpHeaders headers, String body, String signatureInputHeader,
@@ -77,15 +166,14 @@ public class HttpSignatureService {
       String[] signedComponents, String signatureInputHeader) {
     StringBuilder sb = new StringBuilder();
 
-    log.info("=== SIGNATURE VERIFICATION DEBUG ===");
+    log.info("=== SIGNATURE VERIFICATION/CREATION DEBUG ===");
     log.info("Method: {}", method.name());
     log.info("URI Path: {}", uri.getPath());
     log.info("URI Authority: {}", uri.getAuthority());
-    log.info("All Headers: {}", headers);
 
     for (String component : signedComponents) {
       sb.append("\"").append(component).append("\": ");
-      String value = "";
+      String value;
       switch (component) {
         case "@method":
           value = method.name();
@@ -97,19 +185,19 @@ public class HttpSignatureService {
           value = uri.getQuery() != null ? "?" + uri.getQuery() : "";
           break;
         case "@authority":
-          value = uri.getAuthority();
+          value = headers.getFirst("Host");
+          if (value == null) {
+            value = uri.getAuthority();
+          }
           break;
         case "content-digest":
           value = headers.getFirst("Content-Digest");
           break;
         default:
           value = headers.getFirst(component);
-          if (value == null) {
-            log.error("❌ Header '{}' NOT FOUND in request!", component);
-            value = "";
-          }
           break;
       }
+      value = Objects.requireNonNullElse(value, "");
       sb.append(value);
       log.info("Component '{}' => '{}'", component, value);
       sb.append("\n");

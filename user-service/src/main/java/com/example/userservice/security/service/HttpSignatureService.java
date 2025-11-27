@@ -82,6 +82,7 @@ public class HttpSignatureService {
     log.info("URI Path: {}", uri.getPath());
     log.info("URI Authority: {}", uri.getAuthority());
     log.info("All Headers: {}", headers);
+    log.info("Host header: {}", headers.getFirst("Host"));
 
     for (String component : signedComponents) {
       sb.append("\"").append(component).append("\": ");
@@ -97,7 +98,10 @@ public class HttpSignatureService {
           value = uri.getQuery() != null ? "?" + uri.getQuery() : "";
           break;
         case "@authority":
-          value = uri.getAuthority();
+          value = headers.getFirst("Host");
+          if (value == null) {
+            value = uri.getAuthority();
+          }
           break;
         case "content-digest":
           value = headers.getFirst("Content-Digest");

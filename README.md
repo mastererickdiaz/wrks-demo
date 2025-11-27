@@ -1,16 +1,26 @@
 # wrks-demo
 
-Proyecto demo que contiene tres microservicios basados en Spring Boot: `discovery-server`, `order-service` y `user-service`.
+Proyecto de demostración de una arquitectura de microservicios basada en Spring Boot y Spring Cloud.
 
-Resumen rápido
+## Resumen de la Arquitectura
 
-- Cada servicio incluye un wrapper de Maven (`mvnw` / `mvnw.cmd`) para compilar en entornos Windows/Linux.
-- Hay scripts en la raíz para construir y ejecutar los servicios: `build-all.sh`, `start-services.sh`, `test-services.sh` y `docker-compose.yml` para orquestar localmente.
+Este proyecto implementa varios patrones comunes en arquitecturas de microservicios:
 
-Cómo compilar todo (Linux/macOS)
+- **API Gateway (`api-gateway`):** Punto de entrada único para todas las peticiones externas. Enruta el tráfico, aplica filtros de seguridad como Rate Limiting y maneja la terminación SSL.
+- **Service Discovery (`discovery-server`):** Un servidor Eureka que permite a los servicios registrarse y descubrirse dinámicamente.
+- **Configuration Server (`config-server`):** Proporciona configuración centralizada para todos los microservicios.
+- **Servicios de Negocio (`order-service`, `user-service`, `product-service`):** Microservicios que implementan la lógica de negocio principal.
+- **Seguridad Interna:** La comunicación entre servicios está protegida mediante **Firmas de Mensajes HTTP** para garantizar la autenticidad e integridad de las peticiones.
 
-1. Construir todos los JARs con el script incluido:
+## Cómo Empezar
 
+### Prerrequisitos
+- Java 21+
+- Docker y Docker Compose
+
+### 1. Construir los Proyectos (Linux/macOS)
+
+El siguiente script compilará todos los módulos de Maven:
 ```bash
 ./build-all.sh
 ```
