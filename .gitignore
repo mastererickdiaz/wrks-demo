@@ -43,3 +43,4 @@ application-*.yml
 *.env
 *.log
 wrks-demo-config
+.DS_Store
