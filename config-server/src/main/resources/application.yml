@@ -4,3 +4,15 @@ server:
 spring:
   application:
     name: config-server
+  threads:
+    virtual:
+      enabled: true
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false

@@ -4,3 +4,15 @@ server:
 spring:
   application:
     name: discovery-server
+  threads:
+    virtual:
+      enabled: true
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false

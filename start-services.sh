@@ -17,7 +17,6 @@ SERVICE_HEALTH_PORTS=(
     ["API Gateway"]="8080"
     ["User Service"]="8081"
     ["Order Service"]="8082"
-    ["Product Service"]="8083"
     ["Vault"]="8200" # Se añade Vault para verificación
 )
 
@@ -36,21 +35,6 @@ wait_for_service_ready() {
     local service=$1
     local port=$2
     local attempt=1
-    
-    if [ "$service" == "Vault" ]; then
-        echo "   Verificando Vault (estado del contenedor)..."
-        while [ $attempt -le $MAX_ATTEMPTS ]; do
-            if docker compose ps vault | grep -q "(healthy)"; then
-                echo "   ✅ Vault está listo y saludable."
-                return 0
-            fi
-            echo "   ⏳ Intento $attempt/$MAX_ATTEMPTS - Vault aún no está listo. Esperando $WAIT_INTERVAL s..."
-            attempt=$((attempt + 1))
-            sleep $WAIT_INTERVAL
-        done
-        fail "Vault no alcanzó el estado saludable en el tiempo límite."
-    fi
-
     local health_url="http://localhost:$port/actuator/health"
 
     # Manejo especial para Discovery Server (requiere autenticación)
@@ -135,12 +119,11 @@ echo -e "\n---"
 echo "⏳ Iniciando servicios de aplicación (API Gateway, User, Order)..."
 # Iniciar API Gateway y servicios de negocio
 # NOTA: Agregamos una variable de entorno al API Gateway para arreglar el error 404 de las métricas.
-docker compose up -d api-gateway user-service order-service product-service
+docker compose up -d api-gateway user-service order-service
 
 # Verificación de salud secuencial para los servicios de aplicación
 wait_for_service_ready "User Service" 8081
 wait_for_service_ready "Order Service" 8082
-wait_for_service_ready "Product Service" 8083
 wait_for_service_ready "API Gateway" 8080
 
 echo -e "\n---"

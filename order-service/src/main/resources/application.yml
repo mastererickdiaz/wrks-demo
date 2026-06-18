@@ -4,9 +4,49 @@ server:
 spring:
   application:
     name: order-service
-  cloud:
-    vault:
-      authentication: TOKEN
-      token: "${VAULT_TOKEN}"
-      kv:
-        backend: "secret"
+  threads:
+    virtual:
+      enabled: true
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false
+
+notifications:
+  webhook:
+    enabled: false
+    url: http://localhost:9999/webhook/order-status
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      orderService:
+        ignore-exceptions:
+          - com.example.orderservice.exception.UserNotFoundException
+          - com.example.orderservice.exception.UserInactiveException
+      userService:
+        ignore-exceptions:
+          - com.example.orderservice.exception.UserNotFoundException
+          - com.example.orderservice.exception.UserInactiveException
+      notificationWebhook:
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+  retry:
+    instances:
+      orderService:
+        ignore-exceptions:
+          - com.example.orderservice.exception.UserNotFoundException
+          - com.example.orderservice.exception.UserInactiveException
+      userService:
+        ignore-exceptions:
+          - com.example.orderservice.exception.UserNotFoundException
+          - com.example.orderservice.exception.UserInactiveException
+      notificationWebhook:
+        max-attempts: 2
+        wait-duration: 500ms

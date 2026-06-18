@@ -4,7 +4,7 @@ Servicio de descubrimiento (Eureka/Discovery) usado por los microservicios del e
 
 Requisitos
 
-- Java 17+ (ver `pom.xml`).
+- Java 25 (ver `pom.xml`).
 - Maven (se incluye `mvnw` para mayor compatibilidad) o Docker.
 
 Compilar y ejecutar localmente

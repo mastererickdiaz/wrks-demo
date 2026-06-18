@@ -1,9 +1,12 @@
 package com.example.orderservice.controller;
 
 import com.example.orderservice.dto.OrderRequest;
+import com.example.orderservice.dto.StatusTransitionRequest;
 import com.example.orderservice.model.Order;
+import com.example.orderservice.model.OrderStatusHistoryEntry;
 import com.example.orderservice.service.OrderService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,13 +14,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
+@RequiredArgsConstructor
 public class OrderController {
 
     private final OrderService orderService;
-
-    public OrderController(OrderService orderService) {
-        this.orderService = orderService;
-    }
 
     @PostMapping
     public ResponseEntity<Order> createOrder(@RequestBody @Valid OrderRequest request) {
@@ -37,6 +37,17 @@ public class OrderController {
             return ResponseEntity.ok(order);
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Order> updateStatus(@PathVariable Long id, @RequestBody @Valid StatusTransitionRequest request) {
+        Order order = orderService.transitionStatus(id, request.status());
+        return ResponseEntity.ok(order);
+    }
+
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<OrderStatusHistoryEntry>> getHistory(@PathVariable Long id) {
+        return ResponseEntity.ok(orderService.getHistory(id));
     }
 
     @GetMapping("/health")

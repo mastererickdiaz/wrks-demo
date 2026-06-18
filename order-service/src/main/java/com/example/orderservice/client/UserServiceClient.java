@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 )
 public interface UserServiceClient {
 
-    @GetMapping("/api/users/{id}")
+    // /raw incluye usuarios inactivos: permite distinguir "no existe" (404) de
+    // "existe pero inactivo" (200, active=false). Ver UserController#getUserByIdIncludingInactive.
+    @GetMapping("/api/users/{id}/raw")
     User getUserById(@PathVariable("id") Long id);
 }

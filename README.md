@@ -29,6 +29,16 @@ Ejecutar los servicios con Docker Compose
 docker-compose up --build
 ```
 
+Trazabilidad distribuida
+
+Los 5 servicios exportan trazas vía OpenTelemetry/OTLP a Jaeger
+(`jaegertracing/all-in-one`, levantado por `docker-compose.yml`). UI en
+`http://localhost:16686` — buscar por servicio (`order-service`,
+`user-service`, etc.) para ver el recorrido completo de una petición. Una
+caída de Jaeger no afecta el tráfico de negocio (no tiene `depends_on` de
+ningún otro servicio). Detalle en
+`specs/004-trazabilidad-distribuida/contracts/tracing-config.md`.
+
 Archivos importantes
 
 - `discovery-server/`, `order-service/`, `user-service/` — código de cada servicio.

@@ -3,6 +3,7 @@ package com.example.userservice.controller;
 import com.example.userservice.model.User;
 import com.example.userservice.service.UserService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,13 +11,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
-
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
 
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
@@ -26,6 +24,16 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         return userService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Uso interno entre servicios (p. ej. order-service vía Feign): a diferencia
+    // de GET /{id}, incluye usuarios inactivos para que el llamador pueda
+    // distinguir "no existe" (404) de "existe pero inactivo" (200, active=false).
+    @GetMapping("/{id}/raw")
+    public ResponseEntity<User> getUserByIdIncludingInactive(@PathVariable Long id) {
+        return userService.findByIdIncludingInactive(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

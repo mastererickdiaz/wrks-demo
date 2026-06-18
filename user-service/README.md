@@ -4,7 +4,7 @@ Microservicio de ejemplo que gestiona usuarios.
 
 Requisitos
 
-- Java 17+ (ver `pom.xml`).
+- Java 25 (ver `pom.xml`).
 - Maven (`mvnw`) o Docker.
 
 Compilar y ejecutar

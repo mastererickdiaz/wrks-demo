@@ -4,3 +4,15 @@ server:
 spring:
   application:
     name: api-gateway
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        # Las métricas ya se exportan vía Prometheus (micrometer-registry-prometheus);
+        # el starter de OpenTelemetry trae también un registro OTLP de métricas que,
+        # sin esto, intenta publicar a localhost:4318 y falla cada minuto en logs.
+        enabled: false
